@@ -10,18 +10,16 @@ const MAIN_PACKAGE_DIR = path.resolve(__dirname, "..");
 const PACKAGES_DIR = path.resolve(ROOT_DIR, "packages");
 const TEST_DIR = path.join(ROOT_DIR, ".e2e-test");
 
-const VERDACCIO_BIN = path.join(
-  MAIN_PACKAGE_DIR,
-  "node_modules",
-  ".bin",
-  "verdaccio",
-);
-const NPM_CLI_LOGIN_BIN = path.join(
-  MAIN_PACKAGE_DIR,
-  "node_modules",
-  ".bin",
-  "npm-cli-login",
-);
+// Resolve binaries dynamically for yarn PnP compatibility
+function getYarnBin(name: string): string {
+  return execSync(`yarn bin ${name}`, {
+    cwd: MAIN_PACKAGE_DIR,
+    encoding: "utf-8",
+  }).trim();
+}
+
+const VERDACCIO_BIN = getYarnBin("verdaccio");
+const NPM_CLI_LOGIN_BIN = getYarnBin("npm-cli-login");
 
 const VERDACCIO_PORT = 4873;
 const VERDACCIO_URL = `http://localhost:${VERDACCIO_PORT}`;
@@ -62,6 +60,7 @@ async function startVerdaccio(): Promise<void> {
 
   const config = `
 storage: ${path.join(configDir, "storage")}
+max_body_size: 100mb
 auth:
   htpasswd:
     file: ${path.join(configDir, "htpasswd")}
