@@ -17,8 +17,11 @@
     "bundleIndex": "esbuild --sourcemap --bundle --minify --platform=node --format=esm src/index.ts --outfile=dist/index.js",
     "lint": "prettier --check src/**/*.ts ./cli.js ",
     "start": "tsc --watch",
-    "test": "vitest run src",
-    "postinstall": "node ./scripts/install.cjs"
+    "test": "vitest run src --exclude src/e2e.test.ts",
+    "test:e2e": "vitest run src/e2e.test.ts --testTimeout=120000",
+    "postinstall": "node ./scripts/install.cjs",
+    "publish-all": "node ./scripts/publish-all.mjs",
+    "publish-all:dry-run": "node ./scripts/publish-all.mjs --dry-run"
   },
   "files": [
     "dist/install.cjs",
@@ -43,8 +46,10 @@
     "esbuild": "^0.27.0",
     "execa": "^7.2.0",
     "node-downloader-helper": "^2.1.9",
+    "npm-cli-login": "^1.0.0",
     "prettier": "^3.5.3",
     "typescript": "^5.8.2",
+    "verdaccio": "^6.1.0",
     "vite": "~5.3.6",
     "vitest": "^2.1.9"
   }
