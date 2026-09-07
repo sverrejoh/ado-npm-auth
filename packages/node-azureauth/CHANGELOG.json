@@ -2,6 +2,72 @@
   "name": "azureauth",
   "entries": [
     {
+      "date": "Wed, 19 Aug 2026 22:16:56 GMT",
+      "version": "0.15.0",
+      "tag": "azureauth_v0.15.0",
+      "comments": {
+        "none": [
+          {
+            "author": "elcraig@microsoft.com",
+            "package": "azureauth",
+            "commit": "bcefafaab8dba77287918cfc0611501535198353",
+            "comment": "Update lint/format scripts"
+          }
+        ]
+      }
+    },
+    {
+      "date": "Mon, 22 Jun 2026 18:16:18 GMT",
+      "version": "0.15.0",
+      "tag": "azureauth_v0.15.0",
+      "comments": {
+        "minor": [
+          {
+            "author": "dannyvv@microsoft.com",
+            "package": "azureauth",
+            "commit": "0b9a870348e1f53b44b0d31ba4e3dd31c68f0bab",
+            "comment": "Bump dependencies"
+          },
+          {
+            "author": "dannyvv@microsoft.com",
+            "package": "azureauth",
+            "commit": "54fd844f373ffd09e7548e17ab304e38add4dc66",
+            "comment": "Bump vite to 6.4.2 and vitest to 4.1.0"
+          }
+        ]
+      }
+    },
+    {
+      "date": "Fri, 12 Dec 2025 22:56:07 GMT",
+      "version": "0.14.0",
+      "tag": "azureauth_v0.14.0",
+      "comments": {
+        "minor": [
+          {
+            "author": "198982749+Copilot@users.noreply.github.com",
+            "package": "azureauth",
+            "commit": "6acdc45af7349e0f809d88c0e6a68671c4d46844",
+            "comment": "Bump vite from 5.3.6 to 5.4.21"
+          }
+        ]
+      }
+    },
+    {
+      "date": "Fri, 12 Dec 2025 20:36:14 GMT",
+      "version": "0.13.0",
+      "tag": "azureauth_v0.13.0",
+      "comments": {
+        "none": [
+          {
+            "author": "jasonmo@microsoft.com",
+            "package": "azureauth",
+            "commit": "1f1575588c0baae491ac862b49c7e2f1473c3dc7",
+            "comment": "switch to esbuild 0.27"
+          }
+        ]
+      }
+    },
+    {
       "date": "Sun, 16 Nov 2025 00:12:40 GMT",
       "version": "0.13.0",
       "tag": "azureauth_v0.13.0",

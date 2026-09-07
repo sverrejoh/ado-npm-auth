@@ -1,8 +1,25 @@
 # Change Log - azureauth
 
-<!-- This log was last generated on Sun, 16 Nov 2025 00:12:40 GMT and should not be manually modified. -->
+<!-- This log was last generated on Mon, 22 Jun 2026 18:16:18 GMT and should not be manually modified. -->
 
 <!-- Start content -->
+
+## 0.15.0
+
+Mon, 22 Jun 2026 18:16:18 GMT
+
+### Minor changes
+
+- Bump dependencies (dannyvv@microsoft.com)
+- Bump vite to 6.4.2 and vitest to 4.1.0 (dannyvv@microsoft.com)
+
+## 0.14.0
+
+Fri, 12 Dec 2025 22:56:07 GMT
+
+### Minor changes
+
+- Bump vite from 5.3.6 to 5.4.21 (198982749+Copilot@users.noreply.github.com)
 
 ## 0.13.0
 

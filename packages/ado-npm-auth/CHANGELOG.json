@@ -2,6 +2,82 @@
   "name": "ado-npm-auth",
   "entries": [
     {
+      "date": "Wed, 19 Aug 2026 22:16:56 GMT",
+      "version": "0.11.1",
+      "tag": "ado-npm-auth_v0.11.1",
+      "comments": {
+        "none": [
+          {
+            "author": "elcraig@microsoft.com",
+            "package": "ado-npm-auth",
+            "commit": "bcefafaab8dba77287918cfc0611501535198353",
+            "comment": "Update lint/format scripts"
+          }
+        ],
+        "patch": [
+          {
+            "author": "beachball",
+            "package": "ado-npm-auth",
+            "comment": "Bump @microsoft/ado-npm-auth-lib to v0.11.1",
+            "commit": "not available"
+          }
+        ]
+      }
+    },
+    {
+      "date": "Mon, 22 Jun 2026 18:16:18 GMT",
+      "version": "0.11.0",
+      "tag": "ado-npm-auth_v0.11.0",
+      "comments": {
+        "minor": [
+          {
+            "author": "dannyvv@microsoft.com",
+            "package": "ado-npm-auth",
+            "commit": "0b9a870348e1f53b44b0d31ba4e3dd31c68f0bab",
+            "comment": "Bump dependencies"
+          }
+        ]
+      }
+    },
+    {
+      "date": "Wed, 17 Dec 2025 23:18:54 GMT",
+      "version": "0.10.0",
+      "tag": "ado-npm-auth_v0.10.0",
+      "comments": {
+        "minor": [
+          {
+            "author": "dannyvv@microsoft.com",
+            "package": "ado-npm-auth",
+            "commit": "adb946a066d144097e007dccbd528bcbe3d0951e",
+            "comment": "Factor out library from the cli bundle"
+          }
+        ]
+      }
+    },
+    {
+      "date": "Fri, 12 Dec 2025 20:36:14 GMT",
+      "version": "0.9.0",
+      "tag": "ado-npm-auth_v0.9.0",
+      "comments": {
+        "minor": [
+          {
+            "author": "jasonmo@microsoft.com",
+            "package": "ado-npm-auth",
+            "commit": "1f1575588c0baae491ac862b49c7e2f1473c3dc7",
+            "comment": "add yarn-v4 plugin for on-demand ado authentication"
+          }
+        ],
+        "patch": [
+          {
+            "author": "jasonmo@microsoft.com",
+            "package": "ado-npm-auth",
+            "commit": "55f63fbbc9ea6f3f84da7b8c135d135d138b64de",
+            "comment": "fix __dirname usage, switch to ESM equivalent"
+          }
+        ]
+      }
+    },
+    {
       "date": "Sun, 16 Nov 2025 00:12:40 GMT",
       "version": "0.8.0",
       "tag": "ado-npm-auth_v0.8.0",

@@ -1,0 +1,103 @@
+{
+  "name": "@microsoft/yarn-plugin-ado-auth",
+  "entries": [
+    {
+      "date": "Thu, 20 Aug 2026 17:08:11 GMT",
+      "version": "0.3.2",
+      "tag": "@microsoft/yarn-plugin-ado-auth_v0.3.2",
+      "comments": {
+        "patch": [
+          {
+            "author": "elcraig@microsoft.com",
+            "package": "@microsoft/yarn-plugin-ado-auth",
+            "commit": "fcc72dfbc987b5e7c606fda150dc2bde38c27352",
+            "comment": "Fix import URL in readme"
+          }
+        ]
+      }
+    },
+    {
+      "date": "Wed, 19 Aug 2026 22:16:56 GMT",
+      "version": "0.3.1",
+      "tag": "@microsoft/yarn-plugin-ado-auth_v0.3.1",
+      "comments": {
+        "none": [
+          {
+            "author": "elcraig@microsoft.com",
+            "package": "@microsoft/yarn-plugin-ado-auth",
+            "commit": "bcefafaab8dba77287918cfc0611501535198353",
+            "comment": "Update lint/format scripts"
+          }
+        ],
+        "patch": [
+          {
+            "author": "beachball",
+            "package": "@microsoft/yarn-plugin-ado-auth",
+            "comment": "Bump @microsoft/ado-npm-auth-lib to v0.11.1",
+            "commit": "not available"
+          }
+        ]
+      }
+    },
+    {
+      "date": "Mon, 22 Jun 2026 18:16:18 GMT",
+      "version": "0.3.0",
+      "tag": "@microsoft/yarn-plugin-ado-auth_v0.3.0",
+      "comments": {
+        "minor": [
+          {
+            "author": "dannyvv@microsoft.com",
+            "package": "@microsoft/yarn-plugin-ado-auth",
+            "commit": "0b9a870348e1f53b44b0d31ba4e3dd31c68f0bab",
+            "comment": "Bump dependencies"
+          }
+        ]
+      }
+    },
+    {
+      "date": "Tue, 19 May 2026 17:42:33 GMT",
+      "version": "0.2.3",
+      "tag": "@microsoft/yarn-plugin-ado-auth_v0.2.3",
+      "comments": {
+        "patch": [
+          {
+            "author": "masplund@microsoft.com",
+            "package": "@microsoft/yarn-plugin-ado-auth",
+            "commit": "62f992e791fb666668f0cd77728834d0e6157f4a",
+            "comment": "Fix circular promise in fetchTokens"
+          }
+        ]
+      }
+    },
+    {
+      "date": "Wed, 17 Dec 2025 23:18:54 GMT",
+      "version": "0.2.0",
+      "tag": "@microsoft/yarn-plugin-ado-auth_v0.2.0",
+      "comments": {
+        "minor": [
+          {
+            "author": "dannyvv@microsoft.com",
+            "package": "@microsoft/yarn-plugin-ado-auth",
+            "commit": "adb946a066d144097e007dccbd528bcbe3d0951e",
+            "comment": "Factor out library from the cli bundle"
+          }
+        ]
+      }
+    },
+    {
+      "date": "Fri, 12 Dec 2025 20:36:14 GMT",
+      "version": "0.1.1",
+      "tag": "@microsoft/yarn-plugin-ado-auth_v0.1.1",
+      "comments": {
+        "none": [
+          {
+            "author": "jasonmo@microsoft.com",
+            "package": "@microsoft/yarn-plugin-ado-auth",
+            "commit": "1f1575588c0baae491ac862b49c7e2f1473c3dc7",
+            "comment": "add yarn-v4 plugin for on-demand ado authentication"
+          }
+        ]
+      }
+    }
+  ]
+}

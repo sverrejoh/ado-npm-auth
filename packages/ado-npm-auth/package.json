@@ -1,18 +1,14 @@
 {
   "name": "ado-npm-auth",
-  "version": "0.8.0",
+  "version": "0.11.1",
   "description": "The ado-npm-auth package can automatically use the azureauth CLI to fetch tokens and update a user's .npmrc file for authenticating to ADO package feeds.",
   "repository": "https://github.com/microsoft/ado-npm-auth",
   "license": "MIT",
   "type": "module",
-  "main": "./lib/index.js",
-  "module": "./lib/index.js",
-  "typings": "./lib/index.d.ts",
   "bin": "./bin/index.js",
   "sideEffects": false,
   "files": [
     "dist/ado-npm-auth.cjs",
-    "lib/**/*",
     "bin",
     "static",
     "LICENCSE.txt",
@@ -20,32 +16,20 @@
   ],
   "scripts": {
     "build": "tsc",
-    "bundle": "yarn bundleBin",
-    "bundleBin": "esbuild --sourcemap=external --bundle --minify --platform=node src/cli.ts --outfile=dist/ado-npm-auth.cjs",
-    "eslint": "eslint .",
-    "lint": "prettier --check src/**/*.ts",
-    "performance-test": "node lib/tests/performance.test.js",
-    "test": "vitest run src"
+    "bundle": "esbuild --sourcemap=external --bundle --minify --platform=node src/cli.ts --outfile=dist/ado-npm-auth.cjs --metafile=dist/ado-npm-auth.meta.json ",
+    "lint": "eslint ."
   },
   "dependencies": {
-    "@npmcli/config": "^10.1.0",
-    "azureauth": "workspace:^",
-    "js-yaml": "^4.1.0",
-    "tslib": "^2.8.1",
-    "workspace-tools": "^0.38.0"
+    "azureauth": "workspace:^"
   },
   "devDependencies": {
+    "@microsoft/ado-npm-auth-lib": "workspace:^",
     "@microsoft/eslint-plugin-sdl": "^1.1.0",
-    "@rnx-kit/eslint-plugin": "^0.9.3",
-    "@types/js-yaml": "4.0.9",
+    "@rnx-kit/eslint-plugin": "^0.9.9",
     "@types/node": "^20.17.28",
-    "@types/npmcli__config": "^6.0.3",
-    "@types/yargs": "^17.0.33",
-    "esbuild": "^0.27.0",
+    "esbuild": "^0.28.1",
     "eslint": "^9.39.1",
-    "prettier": "^3.5.3",
     "typescript": "^5.8.2",
-    "vitest": "^2.1.9",
     "yargs": "^17.7.2"
   }
 }

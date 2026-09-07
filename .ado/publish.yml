@@ -2,23 +2,44 @@ name: ado-npm-auth-$(Rev:rrr)
 
 pr: none
 trigger:
+  batch: true
   branches:
     include:
       - main
-      - 'release/*'
+      - "release/*"
 
 resources:
   repositories:
-  - repository: OfficePipelineTemplates
-    type: git
-    name: 1ESPipelineTemplates/OfficePipelineTemplates
-    ref: refs/tags/release
+    - repository: OfficePipelineTemplates
+      type: git
+      name: 1ESPipelineTemplates/OfficePipelineTemplates
+      ref: refs/tags/release
 
 variables:
   - name: tags
     value: production,externalfacing
-  - name: ReleaseBranch
-    value: rnbot/beachball/rel$(Build.BuildId)
+  - name: releaseBranch
+    value: beachball/rel$(Build.BuildId)
+    readonly: true
+  # Only validate against Node 24 in the release build, since the PR build checked other versions.
+  # (Even running multi-OS in this pipeline is probably overkill.)
+  - name: nodeVersion
+    value: "24.x"
+    readonly: true
+    # Internal npm feed (with npmjs.org as upstream) for build/publish in 1ES PT
+  - name: REGISTRY_URL
+    value: https://pkgs.dev.azure.com/office/_packaging/Office/npm/registry/
+    readonly: true
+    # Yarn v4 doesn't respect .npmrc, so set config with YARN_* env
+  - name: YARN_NPM_REGISTRY_SERVER
+    value: $(REGISTRY_URL)
+    readonly: true
+  - name: YARN_NPM_ALWAYS_AUTH
+    value: 1
+    readonly: true
+  - name: YARN_NPMRC_AUTH_ENABLED
+    value: 1
+    readonly: true
 
 parameters:
   - name: pools
@@ -32,14 +53,7 @@ parameters:
         os: linux
       - name: Azure Pipelines
         vmImage: macos-latest
-        os: macOS        
-  - name: nodeVersions
-    type: object
-    default:
-      - 18.x
-      - 20.x
-      - 22.x
-      - 24.x
+        os: macOS
 
 extends:
   template: v1/Office.Official.PipelineTemplate.yml@OfficePipelineTemplates
@@ -59,120 +73,176 @@ extends:
         parser: "@typescript-eslint/parser"
         parserOptions: ""
     stages:
-    - stage: Verification
-      jobs:
-        - ${{ each pool in parameters.pools }}:
-          - ${{ each nodeVersion in parameters.nodeVersions }}:
-            - job: build_${{ pool.os }}_${{ replace(nodeVersion, '.', '_') }}
-              displayName: Build on ${{ pool.os }} - node ${{ nodeVersion }}
-              pool: ${{ pool }}
-              templateContext:
-                outputs:
-                  # declare the outputs for compliance.
-                  - output: pipelineArtifact
-                    targetPath: $(System.DefaultWorkingDirectory)
-                    artifactName: publish-${{ pool.os }}_${{ replace(nodeVersion, '.', '_') }}
-              steps:
-                - template: /.ado/prep-node.yml@self
-                  parameters:
-                    nodeVersion: ${{ nodeVersion }}
+      - stage: Verification
+        jobs:
+          - ${{ each pool in parameters.pools }}:
+              - job: build_${{ pool.os }}_${{ replace(variables.nodeVersion, '.', '_') }}
+                displayName: Build on ${{ pool.os }} - node ${{ variables.nodeVersion }}
+                pool: ${{ pool }}
+                # Note: since we're releasing packed tgz files, uploading only those files as outputs
+                # satisfies compliance requirements (it's not necessary to upload the whole repo).
+                steps:
+                  - template: /.ado/templates/setup.yml@self
+                    parameters:
+                      nodeVersion: ${{ variables.nodeVersion }}
 
-                - script: yarn install --immutable
-                  displayName: Yarn install (installs package dependencies)
+                  - script: yarn lage build test lint bundle
+                    displayName: Build all
 
-                - script: yarn lage build test lint bundle --reporter=azureDevOps
-                  displayName: Build all
+      # The Build stage:
+      # - Bumps package versions, updates changelogs, and deletes consumed change files,
+      #   and pushes resulting changes to $(releaseBranch).
+      # - Packs changed npm packages as an artifact.
+      #
+      # Outputs:
+      # - BumpAndPack.CommitChanges.hasUpdates: true if changes were pushed (otherwise unset).
+      # - BumpAndPack.PackPackages.hasPackages: true if */*.tgz files were packed (otherwise unset).
+      # - NpmPackedTarballs: pipeline artifact containing the packed npm packages.
+      #
+      # NOTE: If the only change files have change type "none", there will be file changes (hasUpdates=true)
+      # but no version bumps.
+      - stage: Build
+        dependsOn:
+          - Verification # Make sure we build and pass tests on all platforms and node versions before publishing
+        jobs:
+          - job: BumpAndPack
+            displayName: Bump and pack npm packages
+            pool:
+              name: Azure-Pipelines-1ESPT-ExDShared
+              image: ubuntu-latest
+              os: linux
+            variables:
+              - name: packagesArtifactPath
+                value: $(Build.StagingDirectory)/published-packages
+                readonly: true
+            templateContext:
+              outputs:
+                - output: pipelineArtifact
+                  targetPath: $(packagesArtifactPath)
+                  artifactName: NpmPackedTarballs
+                  displayName: Packed npm packages
 
-                - task: PowerShell@2
-                  inputs:
-                    targetType: 'inline'
-                    script: |
-                      Get-ChildItem -Recurse -File -Filter 'esbuild.exe' | Remove-Item -Force -ErrorAction SilentlyContinue
-                  displayName: Remove esbuild binaries due to false positives in compliance checks of binskim
-                  condition: and(succeeded(), eq('${{ pool.os }}', 'windows'))
+            steps:
+              - template: /.ado/templates/setup.yml@self
+                parameters:
+                  nodeVersion: ${{ variables.nodeVersion }}
+                  persistCredentials: true
 
-    - stage: Publish
-      dependsOn: 
-       - Verification # Make sure we build and pass tests on all platforms and node versions before publishing
-      jobs:
-        - job: Publish
-          pool:
-            name: Azure-Pipelines-1ESPT-ExDShared
-            image: ubuntu-latest
-            os: linux
-          templateContext:
-            outputs:
-             - output: pipelineArtifact
-               targetPath: $(Pipeline.Workspace)/published-packages
-               artifactName: NpmPackedTarballs
-               displayName: 'Publish npm pack artifacts'
-               condition: succeededOrFailed()
-              
-          steps:
-            - checkout: self
+              - bash: yarn lage build bundle
+                displayName: Build & Bundle
 
-            - template: /.ado/prep-node.yml@self
-              parameters:
-                nodeVersion: 24.x
+              # Bump package versions, update changelog, and delete change files.
+              # If there were files with change type "none", there might be file changes without a version bump.
+              # (The inverse is not true: if there are no file changes, there will be no version bump.)
+              - bash: |
+                  yarn beachball bump --verbose
+                displayName: 📝 Beachball Bump for GitHub PR
 
-            - script: yarn install --immutable
-              displayName: Yarn Install (Install package dependencies)
+              # Commit and push if relevant (set hasUpdates only if there were changes).
+              # We could create the PR here too, but separating it has the benefit of ensuring that any
+              # post-build compliance checks are successful before PR creation.
+              - bash: |
+                  set -x
+                  git status
+                  git add --all
+                  if git diff --cached --quiet; then
+                    echo "No changes to commit"
+                  else
+                    git commit -m "📦 Apply beachball changes"
+                    git log -10
+                    git push origin 'HEAD:refs/heads/$(releaseBranch)' --force-with-lease
+                    echo "##vso[task.setvariable variable=hasUpdates;isOutput=true;isReadOnly=true]true"
 
-            - script: yarn lage build bundle --reporter=azureDevOps
-              displayName: Build & Bundle
+                    echo "Reverting changes for subsequent steps"
+                    git reset HEAD~ --hard
+                  fi
+                displayName: 📝 Commit and push changes
+                name: CommitChanges
 
-            - task: AzureKeyVault@2
+              # Revert changes, then use beachball to pack any changed npm packages.
+              - bash: |
+                  set -x
+                  rm -rf '$(packagesArtifactPath)'
+                  mkdir '$(packagesArtifactPath)'
+                  yarn beachball publish --verbose --no-push --pack-to-path '$(packagesArtifactPath)'
+
+                  if compgen -G '$(packagesArtifactPath)/*/*.tgz' >/dev/null; then
+                    echo "##vso[task.setvariable variable=hasPackages;isOutput=true;isReadOnly=true]true"
+                  fi
+                displayName: 📦 Pack npm packages with Beachball
+                name: PackPackages
+
+              - bash: ls -R '$(packagesArtifactPath)'
+                displayName: 📦 Show packaged npm artifacts
+
+      # The CreateAndMergePR stage:
+      # - Creates or locates a pull request for $(releaseBranch), then waits for it to be merged or closed.
+      # - Deletes the release branch after the pull request is merged or closed.
+      # - Succeeds only after the pull request is merged; a closed or unreadable pull request fails the stage.
+      #
+      # NOTE: This stage runs only when Build.BumpAndPack.CommitChanges.hasUpdates is true.
+      - stage: CreateAndMergePR
+        dependsOn:
+          - Build
+        condition: and(succeeded(), eq(dependencies.Build.outputs['BumpAndPack.CommitChanges.hasUpdates'], 'true'))
+        jobs:
+          - job: PullRequest
+            pool:
+              name: Azure-Pipelines-1ESPT-ExDShared
+              image: ubuntu-latest
+              os: linux
+            steps:
+              - template: /.ado/templates/setup.yml@self
+                parameters:
+                  nodeVersion: ""
+                  persistCredentials: true
+
+              # This sets the read-only job variable prNumber.
+              - script: bash scripts/create-release-pr.sh
+                env:
+                  GH_TOKEN: $(githubAuthToken)
+                  BRANCH: $(releaseBranch)
+                  BUILD_NUMBER: $(Build.BuildNumber)
+                  VARIABLE_NAME: prNumber
+                displayName: Create or locate beachball release PR
+
+              - script: bash scripts/wait-for-pr-merge.sh
+                env:
+                  GH_TOKEN: $(githubAuthToken)
+                  PR_NUMBER: $(prNumber)
+                  PR_BRANCH: $(releaseBranch)
+                displayName: Wait for beachball PR merge
+
+      # Publish packages via ESRP. This only runs if a PR was created and merged (otherwise it implies
+      # there was a problem or no changes to publish).
+      - stage: PublishNpmPackages
+        dependsOn:
+          - Build
+          - CreateAndMergePR
+        condition: and(succeeded(), eq(dependencies.Build.outputs['BumpAndPack.PackPackages.hasPackages'], 'true'))
+        jobs:
+          - job: PublishNpmPackages
+            pool:
+              name: Azure-Pipelines-1ESPT-ExDShared
+              image: ubuntu-latest
+              os: linux
+            templateContext:
               inputs:
-                azureSubscription: 'CXE - RNW CI & Anomaly-Detection (8735cced-c5b3-4da5-867b-2c3f680273c8)'
-                KeyVaultName: rnw-keyvault
-                SecretsFilter: 'githubAuthToken' # string. Required. Secrets filter. Default: *.  
-              displayName: Obtaining secrets for publish
-
-            - script: |
-                rm -rf "$(Pipeline.Workspace)/published-packages"
-                mkdir "$(Pipeline.Workspace)/published-packages"
-              displayName: Clear previous packed up packages.
-
-            - script: |
-                git config --global user.email "53619745+rnbot@users.noreply.github.com"
-                git config --global user.name "React-Native Bot"
-                echo git remote set-url origin https://rnbot:$GH_TOKEN@github.com/microsoft/ado-npm-auth
-                git remote set-url origin https://rnbot:$GH_TOKEN@github.com/microsoft/ado-npm-auth
-              displayName: Git Config
-
-            - script: |
-                yarn beachball publish --message "📦 applying package updates ***NO_CI***" --verbose --access public --no-publish --pack-to-path "$(Pipeline.Workspace)/published-packages" $(SkipGitPushPublishArgs) --yes  
-              displayName: Beachball Publish
-
-            - script: ls "$(Pipeline.Workspace)/published-packages"
-
-    - stage: PublishNpmPackages
-      dependsOn: Publish # Make sure we build and pass tests on all platforms and node versions before publishing
-      jobs:
-        - job: PublishNpmPackages
-          pool:
-            name: Azure-Pipelines-1ESPT-ExDShared
-            image: windows-latest
-            os: windows
-          steps:
-            - task: DownloadPipelineArtifact@2
-              displayName: 'Download packaged npm artifacts'
-              inputs:
-                buildType: 'current'
-                artifact: 'NpmPackedTarballs'
-                path: '$(Pipeline.Workspace)\published-packages'
-            
-            - task: 'SFP.release-tasks.custom-build-release-task.EsrpRelease@9'
-              displayName: 'ESRP Release to npmjs.com'
-              inputs:
-                connectedservicename: 'ESRP-JSHost3'
-                usemanagedidentity: false
-                keyvaultname: 'OGX-JSHost-KV'
-                authcertname: 'OGX-JSHost-Auth4'
-                signcertname: 'OGX-JSHost-Sign3'
-                clientid: '0a35e01f-eadf-420a-a2bf-def002ba898d'
-                domaintenantid: 'cdc5aeea-15c5-4db6-b079-fcadd2505dc2'
-                contenttype: npm
-                folderlocation: $(Pipeline.Workspace)\published-packages
-                owners: 'vmorozov@microsoft.com'
-                approvers: 'khosany@microsoft.com'
+                - input: pipelineArtifact
+                  artifactName: NpmPackedTarballs
+                  targetPath: "$(Pipeline.Workspace)/published-packages"
+            steps:
+              - task: "SFP.release-tasks.custom-build-release-task.EsrpRelease@9"
+                displayName: "ESRP Release to npmjs.com"
+                inputs:
+                  connectedservicename: "ESRP-JSHost3"
+                  usemanagedidentity: false
+                  keyvaultname: "OGX-JSHost-KV"
+                  authcertname: "OGX-JSHost-Auth4"
+                  signcertname: "OGX-JSHost-Sign3"
+                  clientid: "0a35e01f-eadf-420a-a2bf-def002ba898d"
+                  domaintenantid: "cdc5aeea-15c5-4db6-b079-fcadd2505dc2"
+                  contenttype: npm
+                  folderlocation: "$(Pipeline.Workspace)/published-packages"
+                  owners: "vmorozov@microsoft.com"
+                  approvers: "khosany@microsoft.com"

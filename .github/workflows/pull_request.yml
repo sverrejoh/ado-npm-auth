@@ -1,41 +1,44 @@
-name: Node.js CI
+name: Merge and PR Validation
 
 on:
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
+  merge_group:
 
 permissions: {}
 
 jobs:
   build:
-
     runs-on: ${{ matrix.os }}
 
     strategy:
       fail-fast: false
       matrix:
-        node-version: [18.x, 20.x, 22.x, 24.x]
+        node-version: [20.x, 22.x, 24.x]
         os: [ubuntu-latest, windows-latest, macos-latest]
         # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
 
     steps:
-    - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-    - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903 # v6
-      with:
-        node-version: ${{ matrix.node-version }}
-        cache: 'yarn'
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: "yarn"
 
-    - name: Install dependencies
-      run: yarn install --immutable
+      - name: Install dependencies
+        run: yarn install --immutable
 
-    - name: Check for change files
-      run: yarn checkchange
+      # Skip this for merge queues (already validated in PR build) and the bump PR.
+      # This is also because there's not a straightforward way to skip the bump PR when it's
+      # in the merge queue.
+      - name: Check for change files
+        if: ${{ github.event_name == 'pull_request' && !contains(github.event.pull_request.title, '***NO_CI***') }}
+        run: yarn checkchange
 
-    - name: Build, test & lint
-      run: yarn lage build test lint bundle
+      - name: Build, test & lint
+        run: yarn lage build test lint bundle
 
-    - name: Check if files updated
-      run: git diff --exit-code
-
+      - name: Check if files updated
+        run: git diff --exit-code
